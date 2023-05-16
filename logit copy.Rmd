@@ -1,0 +1,38 @@
+---
+title: "Logit Model"
+author: "Group 6"
+date: "2023-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caret)
+data_train<-readRDS("data_train")
+data_test<- readRDS("data_test")
+```
+
+```{r eval=FALSE}
+logit_model<- step(glm(attrition_yes ~ . ,data=data_train, family = "binomial"))
+summary(logit_model)
+```
+
+```{r}
+cor(data_train)[which(cor(data_train) == 1)]
+```
+
+
+```{r}
+logit_pred<-predict(logit_model, newdata = data_test , type = "response")
+
+pred<-as.factor(ifelse(logit_pred>=0.15,1,0))
+test<-as.factor(data_test$attrition_yes)
+
+confusionMatrix(pred,test, positive = "1")
+
+saveRDS(logit_model,"logit_model")
+```
+

@@ -1,0 +1,88 @@
+---
+title: "tele_decision_tree"
+author: "Group 6"
+date: "2023-03-20"
+output: html_document
+---
+
+The code consists of three different models that are built and trained on a dataset called "tele_train" and then evaluated on a test dataset called "tele_test". The three models are Decision Tree, Decision Tree Boosting, and Random Forest.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Libraries
+
+First, the necessary libraries are loaded:
+```{r}
+library("C50")
+library("caret")
+library("randomForest")
+```
+
+### Read Data
+
+"data_train" and "data_test" datasets are read in:
+
+The "data_train" dataset is upsampled using the upSample function from the caret library to address class imbalance. The minority class, represented by attrition_yes, is oversampled to balance the dataset.
+
+```{r}
+data_train <- readRDS("data_train")
+data_test  <- readRDS("data_test")
+
+
+data_train_up <- upSample(data_train[, !names(data_train) %in% "attrition_yes"],as.factor(data_train$attrition_yes), yname = "attrition_yes")
+
+```
+
+### Decision Tree
+
+The first model built is the Decision Tree. The C5.0 function from the C50 library is used to build the model. The formula used in this case is as.factor(yyes) ~ . which means that the model will use all the other columns to predict the "yyes" column, which is the outcome of interest.
+
+```{r}
+DT_model <- C5.0(as.factor(attrition_yes) ~ ., data = data_train)
+```
+
+
+After the model is built, the predict function is used to predict the outcome for the test dataset. The as.factor function is used to convert the predicted values into factors, which are easier to work with in R.
+
+To evaluate the model's performance, a confusion matrix is generated using the confusionMatrix function from the caret library. The positive class is set to "1" since that is the minority class that we are interested in predicting correctly.
+
+```{r}
+DT_pred <- as.factor(predict(DT_model, data_test))
+
+confusionMatrix(DT_pred,as.factor(data_test$attrition_yes), positive = "1")
+
+saveRDS(DT_model, "DT_model")
+```
+
+### Decision Tree Boosting
+
+The boosted decision tree is also trained using the C5.0 algorithm and the upsampled training data, but with 20 trials. The resulting model is used to predict the outcomes of the testing data, and the confusion matrix is generated to evaluate its performance. The model is then saved as an RDS file.
+
+```{r}
+DT_model_boost <- C5.0(as.factor(attrition_yes) ~ ., data = data_train, trials = 10)
+
+DT_boost_pred <- as.factor(predict(DT_model_boost, data_test))
+
+confusionMatrix(DT_boost_pred,as.factor(data_test$attrition_yes), positive = "1")
+
+saveRDS(DT_model_boost, "DT_model_boost")
+```
+
+### Random Forest 
+
+The random forest model is trained using the randomForest package, again using the upsampled training data. The resulting model is then used to predict the outcomes of the testing data, and the confusion matrix is generated to evaluate its performance. The model is then saved as an RDS file.
+
+
+```{r}
+set.seed(12345)
+RF_model <- randomForest(as.factor(attrition_yes)~.,data = data_train_up, mtry = 5)
+
+RF_pred <- as.numeric(predict(RF_model, data_test))-1
+
+confusionMatrix(as.factor(RF_pred), as.factor(data_test$attrition_yes))
+
+saveRDS(RF_model,"RF_model")
+```
+
